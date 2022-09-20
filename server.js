@@ -62,7 +62,7 @@ app.get("/check", async (req, res) => {
   try {
     browser = await puppeteer.launch(options)
 
-    page = await browser.newPage()
+    page = (await browser.pages())[0]
     await page.goto("https://www.google.com")
     res.send(await page.title())
   } catch (err) {
