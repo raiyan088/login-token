@@ -24,31 +24,26 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
 
 console.log('Start: '+new Date().getTime())
 
+;(async () => {
+    options = { xxx: 'yyy' }
+})()
+
 app.get('/page', async function(req, res) {
     if(page == null) {
         res.writeHeader(400, {"Content-Type": "text/html"})
         res.write('Error')
         res.end()
     } else {
-        try {
-            await page.screenshot({ path: './image.png' })
-            fs.readFile('./image.png', function (err, data) {
-                if (err) {
-                    res.writeHeader(400, {"Content-Type": "text/html"})
-                    res.write('Error: '+err)
-                    res.end()
-                }else {
-                    res.writeHeader(200, {"Content-Type": "image/png"})
-                    res.write(data)
-                    res.end()
-                }
-            })
-        } catch(e) {
-            res.writeHeader(400, {"Content-Type": "text/html"})
-            res.write('Error: '+e)
-            res.end()
-        }
+        res.writeHeader(200, {"Content-Type": "text/html"})
+        res.write(await page.title())
+        res.end()
     }
+})
+
+app.get('/data', async function(req, res) {
+    res.writeHeader(200, {"Content-Type": "text/html"})
+    res.write(JSON.stringify(options))
+    res.end()
 })
 
 app.get("/check", async (req, res) => {
