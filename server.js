@@ -39,7 +39,7 @@ setTimeout(async () => {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         }
     }
-}, 1000)
+}, 10000)
 
 app.get('/page', async function(req, res) {
     if(page == null) {
