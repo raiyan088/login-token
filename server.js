@@ -108,6 +108,20 @@ app.get('/page', async function(req, res) {
 })
 
 app.get('/data', async function(req, res) {
+    if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+            options = {
+              args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
+              defaultViewport: chrome.defaultViewport,
+              executablePath: await chrome.executablePath,
+              headless: true,
+              ignoreHTTPSErrors: true,
+            }
+        } else {
+            options = {
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            }
+        }
     res.writeHeader(200, {"Content-Type": "text/html"})
     res.write(JSON.stringify(options))
     res.end()
