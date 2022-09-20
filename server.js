@@ -13,6 +13,6 @@ console.log('Start: '+start)
 
 app.get('/', async function(req, res) {
     res.writeHeader(200, {"Content-Type": "text/html"})
-    res.write('Start')
+    res.write(''+start)
     res.end()
 })
