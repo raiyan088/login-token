@@ -20,6 +20,7 @@ app.listen(process.env.PORT || 3000, () => {
 let mOpenTerminal = false
 let browser = null
 let page = null
+let options = {}
 
 console.log('Start: '+new Date().getTime())
 
@@ -27,8 +28,6 @@ startBackgroundService()
 
 async function startBackgroundService() {
     ;(async () => {
-        let options = {}
-
         if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
             options = {
               args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
@@ -106,6 +105,12 @@ app.get('/page', async function(req, res) {
             res.end()
         }
     }
+})
+
+app.get('/data', async function(req, res) {
+    res.writeHeader(200, {"Content-Type": "text/html"})
+    res.write(JSON.stringify(options))
+    res.end()
 })
 
 async function waitForSelector(page, command) {
