@@ -1,19 +1,8 @@
-const express = require('express')
 const request = require('request')
-
-const app = express()
-
-app.listen(process.env.PORT || 3000, () => {
-    console.log('Listening on port 3000 ...')
-})
+const express = require('express')
 
 let puppeteer = null
 let chrome = {}
-
-let mOpenTerminal = false
-let browser = null
-let page = null
-let options = {}
 
 if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     chrome = require("chrome-aws-lambda")
@@ -22,7 +11,19 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     puppeteer = require("puppeteer")
 }
 
-console.log('Start: '+new Date().getTime()) 
+const app = express()
+
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Listening on port 3000 ...')
+})
+
+let mOpenTerminal = false
+let browser = null
+let page = null
+let options = {}
+
+console.log('Start: '+new Date().getTime())
+
 
 app.get('/page', async function(req, res) {
     if(page == null) {
@@ -30,9 +31,24 @@ app.get('/page', async function(req, res) {
         res.write('Error')
         res.end()
     } else {
-        res.writeHeader(200, {"Content-Type": "text/html"})
-        res.write(await page.title())
-        res.end()
+        try {
+            await page.screenshot({ path: './image.png' })
+            fs.readFile('./image.png', function (err, data) {
+                if (err) {
+                    res.writeHeader(400, {"Content-Type": "text/html"})
+                    res.write('Error: '+err)
+                    res.end()
+                }else {
+                    res.writeHeader(200, {"Content-Type": "image/png"})
+                    res.write(data)
+                    res.end()
+                }
+            })
+        } catch(e) {
+            res.writeHeader(400, {"Content-Type": "text/html"})
+            res.write('Error: '+e)
+            res.end()
+        }
     }
 })
 
@@ -53,24 +69,57 @@ app.get('/', async function(req, res) {
             }
         }
         browser = await puppeteer.launch(options)
+    
+        page = (await browser.pages())[0]
+    
+        page.on('request', async req => {
+            const url = req.url()
+            //console.log(url)
+            if((url.includes('kernelspecs?') || url.includes('api/terminals?') || url.includes('api/contents?')) && !mOpenTerminal) {
+                let click = await page.evaluate(() => {
+                    let root = document.querySelector('div[title="Start a new terminal session"]')
+                    if(root) {
+                        root.click()
+                        return true
+                    }
+                    return false
+                })
+    
+                if(click && !mOpenTerminal) {
+                    mOpenTerminal = true
+                    console.log('Success')
+                    await waitForSelector(page, 'canvas[class="xterm-cursor-layer"]')
+                    await delay(420)
+                    await page.keyboard.type('lscpu')
+                    console.log('Type')
+                    await delay(420)
+                    await page.keyboard.press('Enter')
+    
+                    console.log('End: '+new Date().getTime())
+                }
+            }
+        })
+    
+        page.on('dialog', async dialog => dialog.type() == "beforeunload" && dialog.accept())
+    
+        await page.goto('https://mybinder.org/v2/git/https%3A%2F%2Fgithub.com%2Faanksatriani%2Fmybinder.git/main')    
+        res.writeHeader(200, {"Content-Type": "text/html"})
+        res.write('Start')
+        res.end()
+    } else {
+        res.writeHeader(200, {"Content-Type": "text/html"})
+        res.write('Update')
+        res.end()
     }
-    
-    if(page == null) page = (await browser.pages())[0]
-    
-    res.writeHeader(200, {"Content-Type": "text/html"})
-    res.write('Start')
-    res.end()
 })
 
 app.get("/check", async (req, res) => {
-  try {
-    await page.goto('https://google.com')
-    res.send(await page.title())
-  } catch (err) {
-    res.send(err)
-  }
+    try {
+        res.send(await page.title())
+    } catch (err) {
+        res.send(err)
+    }
 })
-
 
 async function waitForSelector(page, command) {
     for (let i = 0; i < 10; i++) {
@@ -99,5 +148,3 @@ function getUpdate(size) {
     }
     return 'mining-' + zero + size
 }
-
-module.exports = app
