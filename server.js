@@ -39,41 +39,6 @@ console.log('Start: '+new Date().getTime())
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         }
     }
-    browser = await puppeteer.launch(options)
-
-    page = (await browser.pages())[0]
-
-    page.on('request', async req => {
-        const url = req.url()
-        //console.log(url)
-        if((url.includes('kernelspecs?') || url.includes('api/terminals?') || url.includes('api/contents?')) && !mOpenTerminal) {
-            let click = await page.evaluate(() => {
-                let root = document.querySelector('div[title="Start a new terminal session"]')
-                if(root) {
-                    root.click()
-                    return true
-                }
-                return false
-            })
-
-            if(click && !mOpenTerminal) {
-                mOpenTerminal = true
-                console.log('Success')
-                await waitForSelector(page, 'canvas[class="xterm-cursor-layer"]')
-                await delay(420)
-                await page.keyboard.type('lscpu')
-                console.log('Type')
-                await delay(420)
-                await page.keyboard.press('Enter')
-
-                console.log('End: '+new Date().getTime())
-            }
-        }
-    })
-
-    page.on('dialog', async dialog => dialog.type() == "beforeunload" && dialog.accept())
-
-    await page.goto('https://mybinder.org/v2/git/https%3A%2F%2Fgithub.com%2Faanksatriani%2Fmybinder.git/main', { waitUntil: 'domcontentloaded', timeout: 0 })
 })() 
 
 app.get('/page', async function(req, res) {
