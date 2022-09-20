@@ -3,8 +3,8 @@ const express = require('express')
 
 const app = express()
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log('Listening on port 3000 ...')
+app.listen(process.env.PORT || 5050, () => {
+    console.log('Listening on port 5050 ...')
 })
 
 let start = new Date().getTime()
