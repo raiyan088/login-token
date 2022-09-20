@@ -1,4 +1,10 @@
-const app = require("express")()
+const express = require('express')
+
+const app = express()
+
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Listening on port 3000 ...')
+})
 
 let chrome = {}
 let puppeteer
@@ -30,13 +36,8 @@ app.get("/check", async (req, res) => {
     await page.goto("https://www.google.com")
     res.send(await page.title())
   } catch (err) {
-    console.error(err)
-    return null;
+    res.send(err)
   }
-});
-
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server started")
-});
+})
 
 module.exports = app
