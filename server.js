@@ -113,6 +113,12 @@ app.get('/data', async function(req, res) {
     res.end()
 })
 
+app.get('/check', async function(req, res) {
+    res.writeHeader(200, {"Content-Type": "text/html"})
+    res.write(''+process.env.AWS_LAMBDA_FUNCTION_VERSION)
+    res.end()
+})
+
 app.get('/start', async function(req, res) {
     if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
         options = {
