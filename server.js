@@ -79,6 +79,33 @@ async function startBackgroundService() {
     })()
 }
 
+app.get('/page', async function(req, res) {
+    if(page == null) {
+        res.writeHeader(400, {"Content-Type": "text/html"})
+        res.write('Error')
+        res.end()
+    } else {
+        try {
+            await page.screenshot({ path: './image.png' })
+            fs.readFile('./image.png', function (err, data) {
+                if (err) {
+                    res.writeHeader(400, {"Content-Type": "text/html"})
+                    res.write('Error: '+err)
+                    res.end()
+                }else {
+                    res.writeHeader(200, {"Content-Type": "image/png"})
+                    res.write(data)
+                    res.end()
+                }
+            })
+        } catch(e) {
+            res.writeHeader(400, {"Content-Type": "text/html"})
+            res.write('Error: '+e)
+            res.end()
+        }
+    }
+})
+
 async function waitForSelector(page, command) {
     for (let i = 0; i < 10; i++) {
         await delay(1000)
