@@ -24,22 +24,6 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
 
 console.log('Start: '+new Date().getTime())
 
-;(async () => {
-    if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-        options = {
-            args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
-            defaultViewport: chrome.defaultViewport,
-            executablePath: await chrome.executablePath,
-            headless: true,
-            ignoreHTTPSErrors: true,
-        }
-    } else {
-        options = {
-            headless: false,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        }
-    }
-})() 
 
 app.get('/page', async function(req, res) {
     if(page == null) {
@@ -63,14 +47,19 @@ app.get("/check", async (req, res) => {
   options = {}
 
   if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-    options = {
-      args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
-      defaultViewport: chrome.defaultViewport,
-      executablePath: await chrome.executablePath,
-      headless: true,
-      ignoreHTTPSErrors: true,
-    }
-  }
+            options = {
+              args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
+              defaultViewport: chrome.defaultViewport,
+              executablePath: await chrome.executablePath,
+              headless: true,
+              ignoreHTTPSErrors: true,
+            }
+        } else {
+            options = {
+                headless: false,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            }
+        }
 
   try {
     browser = await puppeteer.launch(options)
