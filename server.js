@@ -22,6 +22,9 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     puppeteer = require("puppeteer")
 }
 
+console.log('Start: '+new Date().getTime())
+
+
 app.get("/check", async (req, res) => {
   options = {}
 
@@ -45,5 +48,34 @@ app.get("/check", async (req, res) => {
     res.send(err)
   }
 })
+
+
+async function waitForSelector(page, command) {
+    for (let i = 0; i < 10; i++) {
+        await delay(1000)
+        const value = await page.evaluate((command) => { return document.querySelector(command) }, command)
+        if (value) i = 10
+    }
+}
+
+function delay(time) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, time)
+    })
+}
+
+function getTime() {
+    var currentdate = new Date();
+    return "Last Sync: @ " + currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds() + ' @ --- '
+}
+
+function getUpdate(size) {
+    let zero = ''
+    let loop = size.toString().length
+    for (let i = 0; i < 3 - loop; i++) {
+        zero += '0'
+    }
+    return 'mining-' + zero + size
+}
 
 module.exports = app
