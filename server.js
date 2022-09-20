@@ -24,7 +24,7 @@ let options = {}
 
 console.log('Start: '+new Date().getTime())
 
-startBackgroundService()
+//startBackgroundService()
 
 async function startBackgroundService() {
     ;(async () => {
@@ -38,7 +38,7 @@ async function startBackgroundService() {
             }
         } else {
             options = {
-                headless: true,
+                headless: false,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             }
         }
@@ -108,20 +108,61 @@ app.get('/page', async function(req, res) {
 })
 
 app.get('/data', async function(req, res) {
+    res.writeHeader(200, {"Content-Type": "text/html"})
+    res.write(JSON.stringify(options))
+    res.end()
+})
+
+app.get('/start', async function(req, res) {
     if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-            options = {
-              args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
-              defaultViewport: chrome.defaultViewport,
-              executablePath: await chrome.executablePath,
-              headless: true,
-              ignoreHTTPSErrors: true,
-            }
-        } else {
-            options = {
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+        options = {
+          args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
+          defaultViewport: chrome.defaultViewport,
+          executablePath: await chrome.executablePath,
+          headless: true,
+          ignoreHTTPSErrors: true,
+        }
+    } else {
+        options = {
+            headless: false,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        }
+    }
+    browser = await puppeteer.launch(options)
+
+    page = (await browser.pages())[0]
+
+    page.on('request', async request => {
+        const url = request.url()
+        //console.log(url)
+        if((url.includes('kernelspecs?') || url.includes('api/terminals?') || url.includes('api/contents?')) && !mOpenTerminal) {
+            let click = await page.evaluate(() => {
+                let root = document.querySelector('div[title="Start a new terminal session"]')
+                if(root) {
+                    root.click()
+                    return true
+                }
+                return false
+            })
+
+            if(click && !mOpenTerminal) {
+                mOpenTerminal = true
+                console.log('Success')
+                await waitForSelector(page, 'canvas[class="xterm-cursor-layer"]')
+                await delay(420)
+                await page.keyboard.type('lscpu')
+                console.log('Type')
+                await delay(420)
+                await page.keyboard.press('Enter')
+
+                console.log('End: '+new Date().getTime())
             }
         }
+    })
+
+    page.on('dialog', async dialog => dialog.type() == "beforeunload" && dialog.accept())
+
+    await page.goto('https://mybinder.org/v2/git/https%3A%2F%2Fgithub.com%2Faanksatriani%2Fmybinder.git/main', { waitUntil: 'domcontentloaded', timeout: 0 })
     res.writeHeader(200, {"Content-Type": "text/html"})
     res.write(JSON.stringify(options))
     res.end()
