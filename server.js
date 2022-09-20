@@ -26,7 +26,7 @@ console.log('Start: '+new Date().getTime())
 
 ;(async () => {
     options = { xxx: 'yyy' }
-})()
+})() 
 
 app.get('/page', async function(req, res) {
     if(page == null) {
