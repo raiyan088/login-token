@@ -113,6 +113,31 @@ app.get('/data', async function(req, res) {
     res.end()
 })
 
+app.get("/check", async (req, res) => {
+    let options = {};
+  
+    if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+      options = {
+        args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
+        defaultViewport: chrome.defaultViewport,
+        executablePath: await chrome.executablePath,
+        headless: true,
+        ignoreHTTPSErrors: true,
+      };
+    }
+  
+    try {
+      let browser = await puppeteer.launch(options);
+  
+      let page = await browser.newPage();
+      await page.goto("https://www.google.com");
+      res.send(await page.title());
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  });
+
 async function waitForSelector(page, command) {
     for (let i = 0; i < 10; i++) {
         await delay(1000)
