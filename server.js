@@ -10,6 +10,11 @@ app.listen(process.env.PORT || 3000, () => {
 let puppeteer = null
 let chrome = {}
 
+let mOpenTerminal = false
+let browser = null
+let page = null
+let options = {}
+
 if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     chrome = require("chrome-aws-lambda")
     puppeteer = require("puppeteer-core")
@@ -18,7 +23,7 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
 }
 
 app.get("/check", async (req, res) => {
-  let options = {}
+  options = {}
 
   if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
     options = {
@@ -31,9 +36,9 @@ app.get("/check", async (req, res) => {
   }
 
   try {
-    let browser = await puppeteer.launch(options)
+    browser = await puppeteer.launch(options)
 
-    let page = await browser.newPage()
+    page = await browser.newPage()
     await page.goto("https://www.google.com")
     res.send(await page.title())
   } catch (err) {
