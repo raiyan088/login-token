@@ -24,23 +24,6 @@ if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
 
 console.log('Start: '+new Date().getTime())
 
-setTimeout(async () => {
-    if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-        options = {
-          args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
-          defaultViewport: chrome.defaultViewport,
-          executablePath: await chrome.executablePath,
-          headless: true,
-          ignoreHTTPSErrors: true,
-        }
-    } else {
-        options = {
-            headless: false,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        }
-    }
-}, 10000)
-
 app.get('/page', async function(req, res) {
     if(page == null) {
         res.writeHeader(400, {"Content-Type": "text/html"})
@@ -78,9 +61,9 @@ app.get("/check", async (req, res) => {
         }
 
   try {
-    browser = await puppeteer.launch(options)
+    if(browser == null) browser = await puppeteer.launch(options)
 
-    page = (await browser.pages())[0]
+    if(page == null) page = (await browser.pages())[0]
     await page.goto("https://www.google.com")
     res.send(await page.title())
   } catch (err) {
