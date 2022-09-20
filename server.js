@@ -18,6 +18,8 @@ app.listen(process.env.PORT || 3000, () => {
 })
 
 let mOpenTerminal = false
+let browser = null
+let page = null
 
 console.log('Start: '+new Date().getTime())
 
