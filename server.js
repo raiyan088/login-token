@@ -127,14 +127,13 @@ app.get("/check", async (req, res) => {
     }
   
     try {
-      let browser = await puppeteer.launch(options);
+      browser = await puppeteer.launch(options);
   
-      let page = await browser.newPage();
+      page = await browser.newPage();
       await page.goto("https://www.google.com");
       res.send(await page.title());
     } catch (err) {
-      console.error(err);
-      return null;
+        res.send(err)
     }
   });
 
