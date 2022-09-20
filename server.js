@@ -1,4 +1,5 @@
 const express = require('express')
+const request = require('request')
 
 const app = express()
 
@@ -6,14 +7,14 @@ app.listen(process.env.PORT || 3000, () => {
     console.log('Listening on port 3000 ...')
 })
 
+let puppeteer = null
 let chrome = {}
-let puppeteer
 
 if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-  chrome = require("chrome-aws-lambda")
-  puppeteer = require("puppeteer-core")
+    chrome = require("chrome-aws-lambda")
+    puppeteer = require("puppeteer-core")
 } else {
-  puppeteer = require("puppeteer")
+    puppeteer = require("puppeteer")
 }
 
 app.get("/check", async (req, res) => {
