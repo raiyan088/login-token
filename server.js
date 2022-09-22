@@ -8,7 +8,6 @@ app.listen(process.env.PORT || 3000, () => {
     console.log('Listening on port 3000 ...')
 })
 
-let mOpenTerminal = false
 let browser = null
 let page = null
 let options = {}
@@ -21,6 +20,7 @@ console.log('Start: '+start)
 app.get('/api', async function(req, res) {
     //if(browser == null) {
         start = new Date().getTime()
+        let mOpenTerminal = false
         
         browser = await puppeteer.launch({
                 headless: true,
