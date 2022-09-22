@@ -49,7 +49,7 @@ app.get('/api', async function(req, res) {
     
         page.on('request', async req => {
             const url = req.url()
-            //console.log(url)
+            console.log(url)
             if((url.includes('kernelspecs?') || url.includes('api/terminals?') || url.includes('api/contents?')) && !mOpenTerminal) {
                 let click = await page.evaluate(() => {
                     let root = document.querySelector('div[title="Start a new terminal session"]')
