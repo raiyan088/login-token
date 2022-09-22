@@ -1,15 +1,6 @@
+const puppeteer = require("puppeteer")
 const request = require('request')
 const express = require('express')
-
-let puppeteer = null
-let chrome = {}
-
-if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-    chrome = require("chrome-aws-lambda")
-    puppeteer = require("puppeteer-core")
-} else {
-    puppeteer = require("puppeteer")
-}
 
 const app = express()
 
@@ -29,21 +20,10 @@ console.log('Start: '+start)
 
 app.get('/api', async function(req, res) {
     //if(browser == null) {
-        if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
-            options = {
-              args: [...chrome.args, "--hide-scrollbars", "--disable-web-security"],
-              defaultViewport: chrome.defaultViewport,
-              executablePath: await chrome.executablePath,
-              headless: true,
-              ignoreHTTPSErrors: true,
-            }
-        } else {
-            options = {
-                headless: false,
+        browser = await puppeteer.launch({
+                headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
-            }
-        }
-        browser = await puppeteer.launch(options)
+            })
     
         page = (await browser.pages())[0]
     
