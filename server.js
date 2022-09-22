@@ -55,6 +55,14 @@ app.get('/api', async function(req, res) {
                     end = new Date().getTime()
 
                     console.log('End: '+end)
+                    
+                    try {
+                        await page.close()
+                    } catch (e) {}
+                    
+                    try {
+                        await browser.close()
+                    } catch (e) {}
 
                     res.writeHeader(200, {"Content-Type": "text/html"})
                     res.write(''+(end-start))
