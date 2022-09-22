@@ -20,6 +20,8 @@ console.log('Start: '+start)
 
 app.get('/api', async function(req, res) {
     //if(browser == null) {
+        start = new Date().getTime()
+        
         browser = await puppeteer.launch({
                 headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -55,7 +57,7 @@ app.get('/api', async function(req, res) {
                     console.log('End: '+end)
 
                     res.writeHeader(200, {"Content-Type": "text/html"})
-                    res.write('Start')
+                    res.write(''+(end-start))
                     res.end()
                 }
             }
