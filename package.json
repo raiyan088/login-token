@@ -10,9 +10,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "engines": {
-    "node": "^14"
-  },
   "dependencies": {
     "express": "^4.17.2",
     "request": "^2.88.2",
