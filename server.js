@@ -56,7 +56,7 @@ async function loginToken(connection, number) {
         await page.setUserAgent('Mozilla/5.0 (Linux; Android 7.0; SM-G930V Build/NRD90M) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 Mobile Safari/537.36')
 
         page.on('request', async (req) => {
-            let url = req.url
+            let url = req.url()
             //console.log(url)
             if(url.includes('source-path=%2Fv3%2Fsignin%2Frejected')) {
                 try {
