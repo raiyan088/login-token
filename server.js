@@ -1,13 +1,16 @@
 const bodyParser = require('body-parser')
 const puppeteer = require('puppeteer')
 const express = require('express')
+const http = require('http')
 
 const app = express()
 
 app.use(express.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
-app.listen(process.env.PORT || 3000, ()=>{
+const server = http.createServer(app)
+
+server.listen(process.env.PORT || 3000, ()=>{
     console.log("Listening on port: "+(process.env.PORT || 3000))
 })
 
