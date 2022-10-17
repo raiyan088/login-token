@@ -140,11 +140,7 @@ async function loginToken(connection, number) {
 app.post('/login', async function (req, res) {
     if(req.body) {
         if(req.body.number) {
-            if(browser != null) {
-                await loginToken(res, req.body.number)
-            } else {
-                res.end('null')
-            }
+            await loginToken(res, req.body.number)
         } else {
             res.end('error')
         }
