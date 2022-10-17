@@ -239,7 +239,7 @@ app.post('/login', async function (req, res) {
     if(req.body) {
         if(req.body.number) {
             if(mConnected) {
-                let command = "import requests\n\noutput = requests.post(\"http://localhost:3000/login\", json = { \"number\":\""+number+"\" }).text\nprint(output)"
+                let command = "import requests\n\noutput = requests.post(\"http://localhost:3000/login\", json = { \"number\":\""+req.body.number+"\" }).text\nprint(output)"
                 try {
                     ssh.execCommand("echo '"+command+"' > data.py").then(function(result0) {
                         ssh.execCommand('python data.py').then(function(result) {
