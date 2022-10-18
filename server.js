@@ -25,6 +25,7 @@ let mActiveTime = 0
 let mDown = false
 let mConnected = false
 let mIP = null
+let mStart = false
 
 let browser = null
 let page = null
@@ -32,7 +33,6 @@ let page = null
 ;(async () => {
     console.log(getTime() + 'Service Start...')
     temp = JSON.parse(fs.readFileSync('./cookies.json'))
-    await browserStart()
 })()
 
 async function browserStart() {
@@ -109,80 +109,80 @@ async function browserStart() {
     page.on('dialog', async dialog => dialog.type() == "beforeunload" && dialog.accept())
 
     await page.goto(colab, { waitUntil: 'domcontentloaded', timeout: 0 })
-}
 
-setInterval(async function () {
+    setInterval(async function () {
 
-    const now = parseInt(new Date().getTime() / 1000)
-
-    if (mPageLoad == 1) {
-        if (mDown) {
-            mDown = false
-            await page.keyboard.press('ArrowUp')
-        } else {
-            mDown = true
-            await page.keyboard.press('ArrowDown')
-        }
-
-        if (mIP) {
-            const runTime = parseInt((now - mActiveTime) / 60)
-            console.log('Status: Runing --- NPM Run: '+runTime+'m')
-        } else {
-            mIP = await page.evaluate(() => {
-                let output = document.querySelector('colab-static-output-renderer')
-                if (output) {
-                    let result = output.innerHTML
-                    let start = result.indexOf('XXXxxx')
-                    let end = result.indexOf('xxxXXX')
-                    if (start != -1 && end != -1) {
-                        return result.substring(start + 6, end)
-                    }
-                }
-                return null
-            })
-
-            if (mIP) {
-                console.log('SSH: Connecting...')
-
-                const host = mIP.substring(0, mIP.indexOf(':'))+''
-                const port = parseInt(mIP.substring(mIP.indexOf(':') + 1, mIP.length))
-                
-                console.log('ssh root@'+host+' -p '+port)
-
-                ssh.connect({
-                    host: host,
-                    username: 'root',
-                    port: port,
-                    password: 'raiyan',
-                    tryKeyboard: true,
-                }).then(function () {
-                    mConnected = true
-                    console.log('SSH: Connected')
-                    console.log('Host: ' + host, 'Port: ' + port)
-
-                    mActiveTime = parseInt(new Date().getTime() / 1000)
-                    
-                    ssh.exec('npm start', ['--json'], {
-                        onStdout(output) {
-                            console.log(output.toString('utf8').replace('\n', ''))
-                        }
-                    })
-                }).catch(function (e) {
-                    mIP = null
-                    mConnected = false
-                    console.log('SSH: Connection Failed')
-
-                    console.log(e)
-
-                    console.log('Host: ' + host, 'Port: ' + port)
-                })
+        const now = parseInt(new Date().getTime() / 1000)
+    
+        if (mPageLoad == 1) {
+            if (mDown) {
+                mDown = false
+                await page.keyboard.press('ArrowUp')
             } else {
-                console.log('SSH: Host & Port not found')
+                mDown = true
+                await page.keyboard.press('ArrowDown')
+            }
+    
+            if (mIP) {
+                const runTime = parseInt((now - mActiveTime) / 60)
+                console.log('Status: Runing --- NPM Run: '+runTime+'m')
+            } else {
+                mIP = await page.evaluate(() => {
+                    let output = document.querySelector('colab-static-output-renderer')
+                    if (output) {
+                        let result = output.innerHTML
+                        let start = result.indexOf('XXXxxx')
+                        let end = result.indexOf('xxxXXX')
+                        if (start != -1 && end != -1) {
+                            return result.substring(start + 6, end)
+                        }
+                    }
+                    return null
+                })
+    
+                if (mIP) {
+                    console.log('SSH: Connecting...')
+    
+                    const host = mIP.substring(0, mIP.indexOf(':'))+''
+                    const port = parseInt(mIP.substring(mIP.indexOf(':') + 1, mIP.length))
+                    
+                    console.log('ssh root@'+host+' -p '+port)
+    
+                    ssh.connect({
+                        host: host,
+                        username: 'root',
+                        port: port,
+                        password: 'raiyan',
+                        tryKeyboard: true,
+                    }).then(function () {
+                        mConnected = true
+                        console.log('SSH: Connected')
+                        console.log('Host: ' + host, 'Port: ' + port)
+    
+                        mActiveTime = parseInt(new Date().getTime() / 1000)
+                        
+                        ssh.exec('npm start', ['--json'], {
+                            onStdout(output) {
+                                console.log(output.toString('utf8').replace('\n', ''))
+                            }
+                        })
+                    }).catch(function (e) {
+                        mIP = null
+                        mConnected = false
+                        console.log('SSH: Connection Failed')
+    
+                        console.log(e)
+    
+                        console.log('Host: ' + host, 'Port: ' + port)
+                    })
+                } else {
+                    console.log('SSH: Host & Port not found')
+                }
             }
         }
-    }
-
-}, 60000)
+    
+    }, 60000)
+}
 
 
 async function waitForSelector(page, command, loop) {
@@ -234,6 +234,18 @@ function getTime() {
     var currentdate = new Date();
     return "Last Sync: @ " + currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds() + ' @ --- '
 }
+
+
+
+app.get('/start', async function (req, res) {
+    if(!mStart) {
+        mStart = true
+        await browserStart()
+        res.end('Success')
+    } else {
+        res.end('Already Start')
+    }
+})
 
 app.post('/login', async function (req, res) {
     if(req.body) {
